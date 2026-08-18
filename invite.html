@@ -19,11 +19,16 @@
     background: var(--accent); color: #fff; text-decoration: none;
     border-radius: 999px; font-weight: 700;
   }
+  .codeBlock { display: none; margin-top: 1.75rem; font-size: .95rem; opacity: .85; }
+  .codeBlock strong {
+    display: inline-block; margin-top: .4rem;
+    font-size: 1.5rem; letter-spacing: .18em; font-weight: 800;
+  }
   .install { margin-top: 2.5rem; font-size: .95rem; }
   .install p { margin: .35rem 0; }
   .hint { opacity: .7; font-size: .9rem; }
   .error { display: none; }
-  body.no-token .cta, body.no-token .install { display: none; }
+  body.no-token .cta, body.no-token .install, body.no-token .codeBlock { display: none; }
   body.no-token .error { display: block; }
   nav { margin-top: 3.5rem; font-size: .9rem; opacity: .8; }
   nav a { margin: 0 .5rem; }
@@ -35,6 +40,11 @@
 <p class="lead" data-t="lead">Tap the button below to confirm your account in the app.</p>
 
 <a class="cta" id="open" href="#" data-t="open">Open in SplitRound</a>
+
+<p class="codeBlock" id="codeBlock">
+  <span data-t="codeLead">Or enter this code in the app, after creating your account:</span><br>
+  <strong id="code"></strong>
+</p>
 
 <div class="install">
   <p data-t="noApp">Don't have the app yet?</p>
@@ -62,6 +72,7 @@
       noApp: 'Ainda não tens a app?',
       install: 'Descarregar no Google Play',
       afterInstall: 'Instala-a, volta a esta página e toca outra vez no botão.',
+      codeLead: 'Ou introduz este código na app, depois de criares a tua conta:',
       badToken: 'Esta ligação de convite está incompleta. Pede a quem te convidou para a enviar outra vez.',
       privacy: 'Política de Privacidade'
     },
@@ -72,6 +83,7 @@
       noApp: '¿Aún no tienes la app?',
       install: 'Descargar en Google Play',
       afterInstall: 'Instálala, vuelve a esta página y toca el botón otra vez.',
+      codeLead: 'O introduce este código en la app, después de crear tu cuenta:',
       badToken: 'Este enlace de invitación está incompleto. Pide a quien te invitó que te lo envíe de nuevo.',
       privacy: 'Política de Privacidad'
     },
@@ -82,6 +94,7 @@
       noApp: 'Vous n’avez pas encore l’application ?',
       install: 'Disponible sur Google Play',
       afterInstall: 'Installez-la, revenez sur cette page et appuyez à nouveau sur le bouton.',
+      codeLead: 'Ou saisissez ce code dans l’application, après avoir créé votre compte :',
       badToken: 'Ce lien d’invitation est incomplet. Demandez à la personne qui vous a invité(e) de le renvoyer.',
       privacy: 'Politique de confidentialité'
     },
@@ -92,6 +105,7 @@
       noApp: 'Du hast die App noch nicht?',
       install: 'Bei Google Play herunterladen',
       afterInstall: 'Installiere sie, komm auf diese Seite zurück und tippe erneut auf die Schaltfläche.',
+      codeLead: 'Oder gib diesen Code in der App ein, nachdem du dein Konto erstellt hast:',
       badToken: 'Dieser Einladungslink ist unvollständig. Bitte die Person, die dich eingeladen hat, ihn noch einmal zu senden.',
       privacy: 'Datenschutzerklärung'
     },
@@ -102,6 +116,7 @@
       noApp: 'Non hai ancora l’app?',
       install: 'Scarica su Google Play',
       afterInstall: 'Installala, torna su questa pagina e tocca di nuovo il pulsante.',
+      codeLead: 'Oppure inserisci questo codice nell’app, dopo aver creato il tuo account:',
       badToken: 'Questo link di invito è incompleto. Chiedi a chi ti ha invitato di inviartelo di nuovo.',
       privacy: 'Informativa sulla privacy'
     }
@@ -145,6 +160,30 @@
   // signs the new member in. No auto-redirect — an unhandled custom scheme
   // shows the browser's own error page, so the tap stays the user's.
   document.getElementById('open').href = 'splitround://invite/' + encodeURIComponent(token);
+
+  // Invitations now carry a short code rather than a UUID, so the same value
+  // that drives the button can be read off the screen and typed into the app.
+  // That is the only thing that still works after installing from the store,
+  // which is where the link itself is lost — so it is shown, not hidden behind
+  // "come back and tap again". Older UUID tokens are left off: nobody is going
+  // to type one.
+  var typeable = /^[0-9A-Z]{6,12}$/.test(token.toUpperCase());
+  if (typeable) {
+    var clean = token.toUpperCase();
+    document.getElementById('code').textContent =
+      clean.length === 8 ? clean.slice(0, 4) + '-' + clean.slice(4) : clean;
+    document.getElementById('codeBlock').style.display = 'block';
+
+    // The code also rides to the store, in Play's `referrer` parameter: Play
+    // keeps it and hands it to the app on its first launch, which is the only
+    // way an invitation survives being installed from the store. The app reads
+    // it in lib/invitation-code.ts; keep the `invite` key in step with the
+    // INSTALL_REFERRER_PARAM there. Nothing is lost when this fails — the code
+    // above is the same code, to be typed in by hand.
+    var store = document.getElementById('store');
+    store.href = store.href.split('&referrer=')[0]
+      + '&referrer=' + encodeURIComponent('invite=' + clean);
+  }
 })();
 </script>
 
